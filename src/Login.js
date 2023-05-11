@@ -1,15 +1,17 @@
-import {useEffect} from "react";
+import {useEffect, useState} from "react";
 import * as firebaseui from "firebaseui"
 import "firebaseui/dist/firebaseui.css"
 import { GoogleAuthProvider } from "firebase/auth"
 import firebaseApp from "./FirebaseConfig";
 import { getAuth } from "firebase/auth";
+import {Box, CircularProgress} from "@mui/material";
 
 function Login() {
 
     if (window.sessionStorage.getItem('user') !== null)
         window.location.href = "/";
 
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         // Initialize the FirebaseUI Widget using Firebase.
@@ -23,7 +25,7 @@ function Login() {
                     return true;
                 },
                 uiShown: function() {
-                    document.getElementById('loader').style.display = 'none';
+                    setLoading(false);
                 }
             },
             // Will use popup for IDP Providers sign-in flow instead of the default, redirect.
@@ -49,10 +51,12 @@ function Login() {
 
 
     return(
-        <>
-            <div id="firebaseui-auth-container"></div>
-            <div id="loader">Loading...</div>
-        </>
+        <Box display="flex" flexDirection="column" justifyContent="center" alignItems="center" height="100vh">
+            {loading && <CircularProgress/>}
+            <Box>
+                <div id="firebaseui-auth-container"></div>
+            </Box>
+        </Box>
     )
 }
 
