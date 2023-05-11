@@ -7,6 +7,10 @@ import { getAuth } from "firebase/auth";
 
 function Login() {
 
+    if (window.sessionStorage.getItem('user') !== null)
+        window.location.href = "/";
+
+
     useEffect(() => {
         // Initialize the FirebaseUI Widget using Firebase.
         const ui = firebaseui.auth.AuthUI.getInstance() || new firebaseui.auth.AuthUI(getAuth(firebaseApp));
@@ -14,14 +18,11 @@ function Login() {
         const uiConfig = {
             callbacks: {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
-                    // User successfully signed in.
-                    // Return type determines whether we continue the redirect automatically
-                    // or whether we leave that to developer to handle.
+                    //store cookie and redirect
+                    window.sessionStorage.setItem('user', JSON.stringify(authResult.user));
                     return true;
                 },
                 uiShown: function() {
-                    // The widget is rendered.
-                    // Hide the loader.
                     document.getElementById('loader').style.display = 'none';
                 }
             },
