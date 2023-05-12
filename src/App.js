@@ -40,7 +40,7 @@ function App() {
 
     const backendUrl = "http://localhost:8000"
 
-    function getMessageHistory() {
+    const getMessageHistory = () => {
         if (recipient === "") return
         try {
             fetch(backendUrl + "/messages", {

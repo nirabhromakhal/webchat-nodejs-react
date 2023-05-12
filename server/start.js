@@ -75,8 +75,8 @@ app.post("/messages", async (req, res) => {
 });
 
 
-app.get("/hello", () => {
-    console.log("Hello there")
+app.get("/health", () => {
+    console.log("Running");
 });
 
 app.listen(PORT, () => {
