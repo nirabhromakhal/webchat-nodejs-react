@@ -1,5 +1,5 @@
 import './App.css';
-import {Box, InputAdornment, IconButton, OutlinedInput} from "@mui/material";
+import {Box, InputAdornment, IconButton, OutlinedInput, CircularProgress} from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import {useState} from "react";
 import colors from "./colors";
@@ -25,25 +25,24 @@ function App() {
         }
         await setDoc(doc(firestore, 'users', user.uid), userObj)
     }
-    storeUserInFireStore().then()
+    // storeUserInFireStore()
 
-    const [users, setUsers] = useState([
-        {email: "a"},
-        {email: "b"}
-    ]);
+    const [users, setUsers] = useState(null);
     const [searchEmail, setSearchEmail] = useState("");
+    const [searching, setSearching] = useState(false);
+    const [searchMessage, setSearchMessage] = useState("Please search for an user email")
 
     const [recipient, setRecipient] = useState("");
     const [message, setMessage] = useState("");
     const [messageHistory, setmessageHistory] = useState([
         {
             from: "nirabhromakhal@gmail.com",
-            to: "a",
+            to: "nirabhromakhal2@gmail.com",
             text: "hi"
         },
         {
             to: "nirabhromakhal@gmail.com",
-            from: "a",
+            from: "nirabhromakhal2@gmail.com",
             text: "I am fine aaaaaaaaaaaaaaaaaaaa kasdk laksd adksla la olakdak dlaksdla dlaksdlak dkdaokdpkadpk oakdpkapd akdpakdk padkpa pakdpakd pakd"
         }
     ])
@@ -56,6 +55,7 @@ function App() {
     }
 
     async function handleSearch(email) {
+        setSearching(true)
         try {
             const matchedUsers = await fetch(backendUrl + "/search", {
                 method: 'POST',
@@ -67,14 +67,20 @@ function App() {
                 }),
             })
 
-            console.log(matchedUsers)
+            matchedUsers.json().then(json => {
+                setUsers(json.filter(userObj => {
+                    return userObj.email !== user.email
+                }))
+            })
         } catch (e) {
-            setUsers([])
+            setSearchMessage("Error: " + e)
+            setUsers(null)
         }
+        setSearching(false)
     }
 
     function sendMessage() {
-
+        console.log(message)
     }
 
     return (
@@ -104,24 +110,37 @@ function App() {
                         }
                     />
                 </Box>
-                <Box>
+                {searching && <Box display="flex" justifyContent="center" alignItems="center" flexGrow={1}>
+                    <CircularProgress />
+                </Box>}
+                {!searching  &&  users === null  &&
+                    <Box display="flex" justifyContent="center" alignItems="center" padding="20px" flexGrow={1}>
+                        <div style={{textAlign: "center"}}>{searchMessage}</div>
+                    </Box>
+                }
+                {!searching  &&  users !== null  &&  users.length === 0  &&
+                    <Box display="flex" justifyContent="center" alignItems="center" padding="20px" flexGrow={1}>
+                        <div style={{textAlign: "center"}}>Did not find any users signed into our app with given email substring</div>
+                    </Box>
+                }
+                {!searching  &&  users !== null  &&  users.length !== 0  &&  <Box>
                     {users.map(user => {
                         return (
                             <Box padding="10px" onClick={() => {
                                 openChat(user.email)
                             }} sx={{
+                                backgroundColor: recipient === user.email ? colors.contrastLight : "white",
                                 '&:hover': {
                                     backgroundColor: colors.contrastLight
                                 }
                             }}>{user.email}</Box>
                         )
                     })}
-                </Box>
+                </Box>}
             </Box>
             <Box display="flex" flexDirection="column" width="70%" height="100%" backgroundColor={colors.primaryLight}>
                 <Box display="flex" flexDirection="column" height="calc(100% - 76px)">
                     {messageHistory.map(message => {
-                        console.log(recipient)
                         if (message.from === user.email) return (
                             <Box sx={{
                                 margin: "10px",
