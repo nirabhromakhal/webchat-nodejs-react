@@ -6,7 +6,10 @@ const PORT = 8000;
 const app = express();
 
 //middlewares
-app.use(cors())
+app.use(cors({
+    origin: '*',
+    optionsSuccessStatus: 200,
+}))
 app.options('*', cors())
 app.use(express.json())
 
