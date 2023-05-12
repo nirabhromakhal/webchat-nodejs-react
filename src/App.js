@@ -5,6 +5,7 @@ import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import SendIcon from '@mui/icons-material/Send';
 import {useEffect, useRef, useState} from "react";
 import colors from "./colors";
+import {createClient} from "@supabase/supabase-js";
 
 function App() {
     let user = window.sessionStorage.getItem('user')
@@ -22,6 +23,18 @@ function App() {
     const [message, setMessage] = useState("");
     const [messageHistory, setMessageHistory] = useState([]);
     const bottomMessageDiv = useRef();
+
+    const supabase = createClient(
+        'https://aytnolfzvuaonlnjuduf.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5dG5vbGZ6dnVhb25sbmp1ZHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODM4NjYzNjYsImV4cCI6MTk5OTQ0MjM2Nn0.HxIpBNEgBmyPwAoMGWVCIZCXLNoKKlN0fzpBwXRMMrI'
+    )
+    const [sendChannel, setSendChannel] = useState(null)
+    const listenChannel = supabase.channel(user.email)
+    listenChannel.on('broadcast', {event: 'message'}, (payload) => {
+        console.log(payload)
+        if (payload.payload.from === recipient) getMessageHistory()
+    }).subscribe()
+
 
     const backendUrl = "https://webchat-nodejs-react-production.up.railway.app";
 
@@ -49,6 +62,7 @@ function App() {
     }
 
     function openChat(email) {
+        if (recipient === email) return
         setMessageHistory([])
         setRecipient(email);
     }
@@ -91,6 +105,17 @@ function App() {
                     message: message
                 }),
             }).then(response => {
+                //broadcast to supabase channel
+                sendChannel.subscribe((status) => {
+                    if (status === 'SUBSCRIBED') {
+                        sendChannel.send({
+                            type: 'broadcast',
+                            event: 'message',
+                            payload: { from: user.email },
+                        })
+                    }
+                })
+
                 setMessage("")
                 getMessageHistory()
             })
@@ -106,12 +131,31 @@ function App() {
     }
 
     useEffect(() => {
-        // setInterval(() => {getMessageHistory()}, 2000)
         bottomMessageDiv.current?.scrollIntoView({behavior: "smooth"})
     }, [messageHistory])
 
     useEffect(() => {
-        getMessageHistory()
+        if (recipient === "") return
+        setSendChannel(supabase.channel(recipient))
+        try {
+            fetch(backendUrl + "/messages", {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    email1: user.email,
+                    email2: recipient,
+                }),
+            }).then(response => {
+                response.json().then(json => {
+                    console.log(json)
+                    setMessageHistory(json)
+                })
+            })
+        } catch (e) {
+            console.log(e)
+        }
     }, [recipient])
 
     return (
