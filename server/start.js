@@ -22,7 +22,7 @@ firebaseAdmin.initializeApp({
     credential: firebaseAdmin.credential.cert(firebaseServiceAccount),
 });
 
-//initialize supabase postgres DB with same service account
+//initialize supabase postgres DB
 const { createClient } = require('@supabase/supabase-js')
 const supabase = createClient(
     'https://aytnolfzvuaonlnjuduf.supabase.co',

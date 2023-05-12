@@ -38,7 +38,7 @@ function App() {
     const [message, setMessage] = useState("");
     const [messageHistory, setMessageHistory] = useState([])
 
-    const backendUrl = "http://localhost:8000"
+    const backendUrl = "https://webchat-nodejs-react-production.up.railway.app"
 
     const getMessageHistory = () => {
         if (recipient === "") return
