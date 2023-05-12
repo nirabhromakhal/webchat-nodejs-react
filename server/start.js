@@ -18,6 +18,13 @@ firebaseAdmin.initializeApp({
     credential: firebaseAdmin.credential.cert(firebaseServiceAccount),
 });
 
+//initialize supabase postgres DB with same service account
+const { createClient } = require('@supabase/supabase-js')
+const supabase = createClient(
+    'https://aytnolfzvuaonlnjuduf.supabase.co',
+    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF5dG5vbGZ6dnVhb25sbmp1ZHVmIiwicm9sZSI6ImFub24iLCJpYXQiOjE2ODM4NjYzNjYsImV4cCI6MTk5OTQ0MjM2Nn0.HxIpBNEgBmyPwAoMGWVCIZCXLNoKKlN0fzpBwXRMMrI'
+)
+
 
 // endpoints ---->
 
@@ -30,12 +37,43 @@ app.post("/search", async (req, res) => {
         .where('email', "<=", email + '\uf8ff')
         .get()
 
-    const emails = []
+    const users = []
     snapshot.forEach(doc => {
-        emails.push(doc.data().email)
+        users.push(doc.data())
     })
-    res.send({emails: emails})
+    res.send(users)
 });
+
+
+app.post("/send", async (req, res) => {
+    const data = req.body;
+    data.datetime = new Date();
+
+    const { error } = await supabase
+        .from('messages')
+        .insert(data)
+
+    res.send()
+});
+
+
+app.post("/messages", async (req, res) => {
+    const body = req.body;
+    console.log(body)
+
+    const { data, error } = await supabase
+        .from('messages')
+        .select()
+        .in('from', [body.email1, body.email2])
+        .in('to', [body.email1, body.email2])
+
+    console.log(data, error)
+    if (error === null)
+        res.send(data)
+    else
+        res.send(error)
+});
+
 
 app.get("/hello", () => {
     console.log("Hello")
