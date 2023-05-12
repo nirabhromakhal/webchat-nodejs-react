@@ -3,7 +3,7 @@ import {Box, InputAdornment, IconButton, OutlinedInput, CircularProgress} from "
 import SearchIcon from "@mui/icons-material/Search";
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import SendIcon from '@mui/icons-material/Send';
-import {useCallback, useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useMemo, useRef, useState} from "react";
 import colors from "./colors";
 import {createClient} from "@supabase/supabase-js";
 
@@ -13,11 +13,11 @@ const supabase = createClient(
 )
 
 function App() {
-    let user = window.sessionStorage.getItem('user')
-    if (user === null)
-        window.location.href = "/login";
-    else
-        user = JSON.parse(user)
+    const user = useMemo(() => {
+        const userCookie = window.sessionStorage.getItem('user')
+        return JSON.parse(userCookie)
+    }, [])
+    if (user === null) window.location.href = "/login";
 
     const [users, setUsers] = useState(null);
     const [searchEmail, setSearchEmail] = useState("");
@@ -47,23 +47,20 @@ function App() {
                 }),
             }).then(response => {
                 response.json().then(json => {
-                    console.log(json)
                     setMessageHistory(json)
                 })
             })
         } catch (e) {
             console.log(e)
         }
-    }, [user, recipient])
+    }, [recipient, user.email])
 
     const listenToChannel = useCallback(() => {
         const listenChannel = supabase.channel(user.email)
         listenChannel.on('broadcast', {event: 'message'}, (payload) => {
-            console.log(payload)
             if (payload.payload.from === recipient) getMessageHistory()
         }).subscribe()
-        console.log("subs")
-    }, [getMessageHistory, recipient, user])
+    }, [getMessageHistory, recipient, user.email])
 
     function openChat(email) {
         if (recipient === email) return
@@ -111,15 +108,22 @@ function App() {
                 }),
             }).then(() => {
                 //broadcast to supabase channel
-                sendChannel.subscribe((status) => {
-                    if (status === 'SUBSCRIBED') {
+                if (sendChannel.joinedOnce) {
+                    sendChannel.send({
+                        type: 'broadcast',
+                        event: 'message',
+                        payload: {from: user.email},
+                    })
+                }
+                else {
+                    sendChannel.subscribe(status => {
                         sendChannel.send({
                             type: 'broadcast',
                             event: 'message',
-                            payload: { from: user.email },
+                            payload: {from: user.email},
                         })
-                    }
-                })
+                    })
+                }
 
                 setMessage("")
                 getMessageHistory()
@@ -213,7 +217,7 @@ function App() {
                         <Box display="flex" flexGrow={1} flexDirection="column" sx={{overflowY: "auto"}}>
                             {users.map(user => {
                                 return (
-                                    <Box padding="10px" width="100%" height="fit-content" onClick={() => {
+                                    <Box padding="10px" onClick={() => {
                                         openChat(user.email)
                                     }} sx={{
                                         backgroundColor: recipient === user.email ? colors.contrastLight : "white",
