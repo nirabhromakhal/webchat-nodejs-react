@@ -3,10 +3,8 @@ import {Box, InputAdornment, IconButton, OutlinedInput, CircularProgress} from "
 import SearchIcon from "@mui/icons-material/Search";
 import PowerSettingsNewIcon from '@mui/icons-material/PowerSettingsNew';
 import SendIcon from '@mui/icons-material/Send';
-import {useEffect, useState} from "react";
+import {useEffect, useRef, useState} from "react";
 import colors from "./colors";
-import {doc, getFirestore, setDoc} from "firebase/firestore";
-import firebaseApp from "./FirebaseConfig";
 
 function App() {
     let user = window.sessionStorage.getItem('user')
@@ -15,20 +13,6 @@ function App() {
     else
         user = JSON.parse(user)
 
-    //store user in Firestore
-    const firestore = getFirestore(firebaseApp)
-    const storeUserInFireStore = async () => {
-        const userObj = {
-            displayName: user.displayName,
-            email: user.email,
-            phoneNumber: user.phoneNumber || null,
-            photoURL: user.photoURL || null,
-            uid: user.uid
-        }
-        await setDoc(doc(firestore, 'users', user.uid), userObj)
-    }
-    // storeUserInFireStore()
-
     const [users, setUsers] = useState(null);
     const [searchEmail, setSearchEmail] = useState("");
     const [searching, setSearching] = useState(false);
@@ -36,9 +20,10 @@ function App() {
 
     const [recipient, setRecipient] = useState("");
     const [message, setMessage] = useState("");
-    const [messageHistory, setMessageHistory] = useState([])
+    const [messageHistory, setMessageHistory] = useState([]);
+    const bottomMessageDiv = useRef();
 
-    const backendUrl = "https://webchat-nodejs-react-production.up.railway.app"
+    const backendUrl = "https://webchat-nodejs-react-production.up.railway.app";
 
     const getMessageHistory = () => {
         if (recipient === "") return
@@ -64,6 +49,7 @@ function App() {
     }
 
     function openChat(email) {
+        setMessageHistory([])
         setRecipient(email);
     }
 
@@ -120,8 +106,9 @@ function App() {
     }
 
     useEffect(() => {
-        setInterval(() => {getMessageHistory()}, 2000)
-    }, [])
+        // setInterval(() => {getMessageHistory()}, 2000)
+        bottomMessageDiv.current?.scrollIntoView({behavior: "smooth"})
+    }, [messageHistory])
 
     useEffect(() => {
         getMessageHistory()
@@ -189,23 +176,26 @@ function App() {
                             <div style={{textAlign: "center"}}>Did not find any users signed into our app with given email substring</div>
                         </Box>
                     }
-                    {!searching  &&  users !== null  &&  users.length !== 0  &&  <Box display="flex" flexGrow={1} sx={{overflowY: "auto"}}>
-                        {users.map(user => {
-                            return (
-                                <Box padding="10px" width="100%" height="fit-content" onClick={() => {
-                                    openChat(user.email)
-                                }} sx={{
-                                    backgroundColor: recipient === user.email ? colors.contrastLight : "white",
-                                    '&:hover': {
-                                        backgroundColor: colors.contrastLight
-                                    }
-                                }}>{user.email}</Box>
-                            )
-                        })}
-                    </Box>}
+                    {!searching  &&  users !== null  &&  users.length !== 0  &&
+                        <Box display="flex" flexGrow={1} flexDirection="column" sx={{overflowY: "auto"}}>
+                            {users.map(user => {
+                                return (
+                                    <Box padding="10px" width="100%" height="fit-content" onClick={() => {
+                                        openChat(user.email)
+                                    }} sx={{
+                                        backgroundColor: recipient === user.email ? colors.contrastLight : "white",
+                                        '&:hover': {
+                                            backgroundColor: colors.contrastLight
+                                        }
+                                    }}>{user.email}</Box>
+                                )
+                            })}
+                        </Box>
+                    }
                 </Box>
                 <Box display="flex" flexDirection="column" width="70%" height="100%" backgroundColor={colors.primaryLight}>
-                    <Box display="flex" flexDirection="column" height="calc(100% - 76px)" sx={{overflowY: "auto"}}>
+                    <Box display="flex" flexDirection="column" id="messages-container" height="calc(100% - 76px)" sx={{overflowY: "auto"}}>
+                        <div id="automatic-top-margin" style={{flex: "1 1 auto"}}></div>
                         {messageHistory.map(message => {
                             if (message.from === recipient) return (
                                 <Box sx={{
@@ -230,6 +220,7 @@ function App() {
                             )
                             return null
                         })}
+                        <div id="automatic-bottom-scroll" ref={bottomMessageDiv}></div>
                     </Box>
                     <Box height="76px" padding="10px" boxSizing="border-box">
                         <OutlinedInput

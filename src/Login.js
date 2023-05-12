@@ -5,6 +5,7 @@ import { GoogleAuthProvider } from "firebase/auth"
 import firebaseApp from "./FirebaseConfig";
 import { getAuth } from "firebase/auth";
 import {Box, CircularProgress} from "@mui/material";
+import {doc, getFirestore, setDoc} from "firebase/firestore";
 
 function Login() {
 
@@ -22,7 +23,20 @@ function Login() {
                 signInSuccessWithAuthResult: function(authResult, redirectUrl) {
                     //store cookie and redirect
                     window.sessionStorage.setItem('user', JSON.stringify(authResult.user));
-                    return true;
+
+                    //store user in FireStore
+                    const user = authResult.user
+                    const userObj = {
+                        displayName: user.displayName,
+                        email: user.email,
+                        phoneNumber: user.phoneNumber || null,
+                        photoURL: user.photoURL || null,
+                        uid: user.uid
+                    }
+                    setDoc(doc(getFirestore(firebaseApp), 'users', user.uid), userObj).then(() => {
+                        window.location.href = "/"
+                    })
+                    return false;
                 },
                 uiShown: function() {
                     setLoading(false);
