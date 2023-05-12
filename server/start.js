@@ -76,7 +76,7 @@ app.post("/messages", async (req, res) => {
 
 
 app.get("/hello", () => {
-    console.log("Hello")
+    console.log("Hello there")
 });
 
 app.listen(PORT, () => {
